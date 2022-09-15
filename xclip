@@ -1,0 +1,9 @@
+
+def check_label(data):
+    ref = data[0][-1]
+    for x in data:
+        if (x[-1] != ref):
+            return False, None
+
+    return True, ref
+

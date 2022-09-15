@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
+import math
+
 
 def get_data():
     with open('magic04.data') as file:
         lines = file.readlines()
-
+        y = []
 
         for i in range(len(lines)):
             line = lines[i].split(",")
@@ -11,113 +12,78 @@ def get_data():
             for j in range(len(line) -1):
                 line[j] = float(line[j])
 
-            line[-1] = line[-1][0]
+            y.append(line.pop(-1)[0])
             lines[i] = line
        
-        return lines
-
-data = get_data()
-
-def wechoose8():
-    ffg = []
-    ffh = []
-
-    n = 8
-
-    for x in data:
-        if (x[-1] == 'g'):
-            ffg.append( x[n])
-        else:
-            ffh.append(x[n])
+        return lines, y
 
 
-    #plt.subplot(211)
-    #plt.plot(ffg)
-    #plt.subplot(212)
-    plt.hist(ffh, bins=40,  histtype="step", color='black')
-    plt.hist(ffg, bins=40,  histtype="step", color='green')
-    plt.show()
 
 
-import math
-
-"""
-for x in data:
-    if x[-1] == 'g':
-        gcount +=1
-    else:
-        hcount += 1
-                      
-entropy = - (gcount/len(data) * math.log(gcount/len(data), 2) + hcount/len(data) * math.log(hcount/len(data), 2) )
-"""
-
-
-def entropy(data):
-    gcount = 0
-    hcount = 0
-
-    for x in data:
-        if x[-1] == 'g':
-            gcount +=1
-        else:
-            hcount += 1
-    
-    if gcount < 1 or hcount < 1:
-        return 0
-
-    entropy = - (gcount/len(data) * math.log(gcount/len(data), 2) + hcount/len(data) * math.log(hcount/len(data), 2) )
+def entropy(label_table):
+    entropy = 0
+    for label_count in label_table.values():
+        entropy -= (label_count/len(y) * math.log(label_count/len(y), 2) )
 
     return entropy
 
 
-#sort(key=get_first)
-'''
-for feature_n in range(10):
-    summen = 0
-    for x in data:
-        summen += x[feature_n]
+def compute_occurencies(y):
+        label_table = {}
 
-    average = summen / len(data)
-
-    greater = 0
-    greater_g = 0
-    greater_h = 0
-
-    for x in data:
-        if x[feature_n] > average :
-            greater +=1
-            
-            if x[-1] == 'g':
-                greater_g += 1
+        for label in y:
+            if  label in label_table.keys():
+                label_table[label] += 1
             else:
-                greater_h += 1
+                label_table[label] = 1
+       
+        return label_table
+
+
+class dataset:
+    def __init__(self, X, y):
+        self.X = X
+        self.y = y
+        self.label_table = compute_occurencies(y)
+        self.entropy = entropy(self.label_table)
+
+    def add(self, x, label):
+        self.X.append(x)
+        self.y.append(label)
+
+
+X,y = get_data()
+data = dataset(X, y)
+print(data.entropy)
 
 
 
+def info_gain(data_father, data1, data2):
+    tot = len(data_father)
+    res = data_fathar.entropy - (data1.entropy*len(data1.X) + data2.entropy*len(data2.X))/tot
+    return res     
 
-    entropy =  - (greater_g/len(data) * math.log(greater_g/len(data), 2) + greater_h/len(data) * math.log(greater_h/len(data), 2) )
 
-    print(entropy)
-'''
 
-def average(data, nth_feature):
+def average(X, nth_feature):
     sum_ = 0
-    for x in data:
+    for x in X:
         sum_ += x[nth_feature]
 
-    return sum_/len(data)
+    return sum_/len(X)
 
 
 
 def split_average(data, average, nth_feature):
-    data1 = []
-    data2 = []
+    data1 = dataset([], [])
+    data2 = dataset([], [])
 
-    for x in data:
-        if x[nth_feature] > average :
-            data1.append(x)
+
+    for i in range(len(data.X)):
+        if data.X[i][nth_feature] > average :
+            data1.add(data.X[i], data.y[i])
         else:
-            data2.append(x)
+            data2.add(data.X[i], data.y[i])
     
     return data1, data2
 
@@ -127,10 +93,5 @@ def split_average(data, average, nth_feature):
 def find_split(data, fn):
     my_data = data.copy()
     my_data.sort(key=lambda x: x[fn])
-    
-
-    
-
-
     print( entropy(data) - (entropy(data1) + entropy(data2)) / 2)
 
