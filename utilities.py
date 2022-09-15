@@ -20,12 +20,20 @@ def get_data():
 
 
 
-def entropy(label_table):
+def entropy(label_table,y):
     entropy = 0
     for label_count in label_table.values():
         entropy -= (label_count/len(y) * math.log(label_count/len(y), 2) )
 
     return entropy
+
+
+def gini(label_table,y):
+    gini = 0
+    for label_count in label_table.values():
+        gini += (label_count/len(y) * (1-(label_count/len(y))))
+
+    return gini
 
 
 def compute_occurencies(y):
@@ -41,26 +49,26 @@ def compute_occurencies(y):
 
 
 class dataset:
-    def __init__(self, X, y):
+    def __init__(self, X, y, impurity = 'entropy'):
         self.X = X
         self.y = y
         self.label_table = compute_occurencies(y)
-        self.entropy = entropy(self.label_table)
+        if impurity == 'gini':
+            self.impurity = gini(self.label_table,self.y)
+        else:
+            self.impurity = entropy(self.label_table,self.y)
 
-    def add(self, x, label):
-        self.X.append(x)
-        self.y.append(label)
 
-
+"""
 X,y = get_data()
 data = dataset(X, y)
-print(data.entropy)
-
+print(data.impurity)
+"""
 
 
 def info_gain(data_father, data1, data2):
-    tot = len(data_father)
-    res = data_fathar.entropy - (data1.entropy*len(data1.X) + data2.entropy*len(data2.X))/tot
+    tot = len(data_father.X)
+    res = data_father.impurity - (data1.impurity*len(data1.X) + data2.impurity*len(data2.X))/tot
     return res     
 
 
@@ -74,24 +82,27 @@ def average(X, nth_feature):
 
 
 
-def split_average(data, average, nth_feature):
-    data1 = dataset([], [])
-    data2 = dataset([], [])
-
+def split_average(data, average, nth_feature, impurity):
+    X1, X2 = [], []
+    y1, y2 = [], []
 
     for i in range(len(data.X)):
         if data.X[i][nth_feature] > average :
-            data1.add(data.X[i], data.y[i])
+            X1.append(data.X[i])
+            y1.append(data.y[i])
         else:
-            data2.add(data.X[i], data.y[i])
-    
+            X2.append(data.X[i])
+            y2.append(data.y[i])
+            
+    data1 = dataset(X1, y1, impurity)
+    data2 = dataset(X2, y2, impurity)
     return data1, data2
 
 
 
-
+"""
 def find_split(data, fn):
     my_data = data.copy()
     my_data.sort(key=lambda x: x[fn])
     print( entropy(data) - (entropy(data1) + entropy(data2)) / 2)
-
+"""

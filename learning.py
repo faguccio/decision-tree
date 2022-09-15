@@ -2,14 +2,12 @@ import utilities as ut
 
 
 
-
-
-
 class Node:
     amount = 0
 
     def __init__(self, father, label=None):
-        amount += 1
+        self.index = Node.amount
+        Node.amount += 1
         
         self.father = father
         self.label = label
@@ -21,22 +19,27 @@ class Node:
         self.lower_child = None
         
     
-    
-    def set_decision(nth, split):
+    def set_decision(self, nth, split):
         self.nth_feature = nth
         self.split_val = split
 
-
-    def set_children(greater, lower):
+    def set_children(self, greater, lower):
         self.greater_child = greater
         self.lower_child = lower
 
-    def is_leaf():
+    def is_leaf(self):
         return self.greater_child == None
 
-    def sanity():
-        if is_leaf():
+    def is_sane(self):
+        if self.is_leaf():
+            if self.lower_child != None:
+                raise Exception("Foglia malata")
+
+    def sanity(self):
+        self.is_sane()
+        if self.is_leaf():
             if self.label == None:
+                print(self.index)
                 raise Exception("Foglia senza label")
 
         else:
@@ -47,7 +50,6 @@ class Node:
             self.lower_child.sanity()
 
             
-
 
 def check_feature(data, nth_feature):
     ref = data.X[0][nth_feature]
@@ -60,25 +62,40 @@ def check_feature(data, nth_feature):
 
 
 
+def choose_feature(data, impurity_measure):
+    if len(data.X) < 2:
+        raise Exception("FUCK MY ASS")
 
-X,y = ut.get_data()
-data = dataset(X, y)
-print(data.entropy)
+    best_info_gain = 0
+    index = -1
+    split_val = 0
+    best_split = []
+    for nth_feature in range(len(data.X[0])):
+        average = ut.average(data.X, nth_feature)
+        data1, data2 = ut.split_average(data, average, nth_feature, impurity_measure)
 
-root = Node()
-
-
-def choose_feature():
-    pass
+        info_gain = ut.info_gain(data, data1, data2)
+        if abs(info_gain) > abs(best_info_gain):
+            best_split = [data1, data2]
+            best_info_gain = info_gain
+            split_val = average
+            index = nth_feature
+            
+    print("best info gain ")
+    print (best_info_gain)
+    #print("data1 length = " + str(len(data2.X)))
+    #print("data2 length = " + str(len(data2.X)))
+        
+    return index, split_val, best_split
 
 
 def larn(X, y, impurity_measure='entropy'):
-    return 0
+    data = ut.dataset(X,y)
+    return learn(data,impurity_measure)
 
 
-def learn(data, father=None):
-   
-    labels = data.label_table.keys()
+def learn(data, impurity_measure, father=None):
+    labels = list(data.label_table.keys())
     if len(labels) == 1:
         leaf = Node(father, label=labels[0])
         return leaf
@@ -93,42 +110,38 @@ def learn(data, father=None):
 
     if second_base_case:
         most_common = max(label_table, key=label_table.get)
-        print(most_common)
+        print(f"secoondo caso base {most_common}")
         leaf = Node(father, label=most_common) 
-        return leaf 
-
-
-    for njasnvoi:
-        average = ut.average(data, i)
-        data1, data2 = ut.split_average(data, average, i)
-
-        if len(data1) < 1 or len(data2) < 1:
-            print(len(data1), len(data2))
-            print(data2)
-            print(data1)
-            raise "GAIA TROIA infame"
-
-
-        info_gain = entropy_father - (ut.entropy(data1) + ut.entropy(data2))/2
-       
-        if info_gain > best_info_gain:
-            best_split = [data1, data2]
-            best_info_gain = info_gain
-            split_val = average
-            index = i
-
+        return leaf
+        
     
-    node = tree(i, split_val, father)
-    node.greater_child = data1
-    node.lower_child = data2
-    print(entropy_father, best_info_gain)
-
-    learn(data1, node)
-    learn(data2, node)
+    index, split_val, best_split = choose_feature(data, impurity_measure)
+    
+    node = Node(father)
+    node.set_decision(index, split_val)
+    node.set_children(learn(best_split[0], node), learn(best_split[1], node))
+    
     return node
 
+def predict(x, node):
+    if node.is_leaf():
+        return node.label
+    index    = node.nth_feature
+    question = node.split_val
+    if x[index] > question:
+        node = node.greater_child
+    else:
+        node = node.lower_child
+    return predict(x,node)
+    
 
-
-
-learn(data.X, data.y)
+X,y = ut.get_data()
+#data = ut.dataset(X, y)
+#root = larn(X,y)
+aline = X[-50]
+data_gini = ut.dataset(X,y,'gini')
+root = larn(X,y,'gini')
+print(data_gini.y[-50])
+print(predict(aline,root))
 print(root.amount)
+root.sanity()
