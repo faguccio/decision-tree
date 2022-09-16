@@ -1,4 +1,5 @@
 import utilities as ut
+import random
 
 
 
@@ -66,7 +67,7 @@ def choose_feature(data, impurity_measure):
     if len(data.X) < 2:
         raise Exception("FUCK MY ASS")
 
-    best_info_gain = 0
+    best_info_gain = None
     index = -1
     split_val = 0
     best_split = []
@@ -75,7 +76,8 @@ def choose_feature(data, impurity_measure):
         data1, data2 = ut.split_average(data, average, nth_feature, impurity_measure)
 
         info_gain = ut.info_gain(data, data1, data2)
-        if abs(info_gain) > abs(best_info_gain):
+        
+        if best_info_gain == None or info_gain > best_info_gain:
             best_split = [data1, data2]
             best_info_gain = info_gain
             split_val = average
@@ -83,18 +85,18 @@ def choose_feature(data, impurity_measure):
             
     print("best info gain ")
     print (best_info_gain)
-    #print("data1 length = " + str(len(data2.X)))
-    #print("data2 length = " + str(len(data2.X)))
         
     return index, split_val, best_split
 
 
-def larn(X, y, impurity_measure='entropy'):
+def larn(X, y, impurity_measure='entropy', prune = False):
     data = ut.dataset(X,y)
-    return learn(data,impurity_measure)
+    return learn(data, impurity_measure, prune)
 
 
-def learn(data, impurity_measure, father=None):
+def learn(data, impurity_measure, prune = False, father=None):
+    #trainX,trainY, pruneX, pruneY = split_prune(X,y, percent=0.8)
+    #data = ut.dataset(trainX,trainY)
     labels = list(data.label_table.keys())
     if len(labels) == 1:
         leaf = Node(father, label=labels[0])
@@ -116,7 +118,6 @@ def learn(data, impurity_measure, father=None):
         
     
     index, split_val, best_split = choose_feature(data, impurity_measure)
-    
     node = Node(father)
     node.set_decision(index, split_val)
     node.set_children(learn(best_split[0], node), learn(best_split[1], node))
@@ -133,15 +134,43 @@ def predict(x, node):
     else:
         node = node.lower_child
     return predict(x,node)
+
+
+
+def split_prune(X,y, percent=0.8):
+    indexes = list(range(len(X)))
+    random.shuffle(indexes)
+    
+    trainX, trainY, pruneX, pruneY = [], [], [], []
+    
+    for i in range(len(X)):
+        if i < int(len(X) * percent):
+            trainX.append(X[indexes[i]])
+            trainY.append(y[indexes[i]])
+        else:
+            pruneX.append(X[indexes[i]])
+            pruneY.append(y[indexes[i]])
+
+
+    return trainX, trainY, pruneX, pruneY
+    
+def accuracy(node, predictions):
+    good_predictions = (predictions == expected)
+    accuracy = good_predicitons/len(predictions)
+    return accuracy
+    
     
 
 X,y = ut.get_data()
-#data = ut.dataset(X, y)
-#root = larn(X,y)
-aline = X[-50]
-data_gini = ut.dataset(X,y,'gini')
-root = larn(X,y,'gini')
-print(data_gini.y[-50])
-print(predict(aline,root))
+
+trainX, trainY, pruneX, pruneY = split_prune(X, y)
+
+data_train = ut.dataset(trainX,trainY,'gini')
+root = larn(trainX,trainY,'gini')
+prune_predictions = []
+for x in pruneX:
+    res = predict(x, root)
+    prune_predictions.append(res)
+
 print(root.amount)
 root.sanity()
