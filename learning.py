@@ -9,17 +9,13 @@ class Node:
     def __init__(self, father, label=None):
         self.index = Node.amount
         Node.amount += 1
-        
         self.father = father
         self.label = label
-
         self.nth_feature = None
         self.split_val = None
-
         self.greater_child = None
         self.lower_child = None
         
-    
     def set_decision(self, nth, split):
         self.nth_feature = nth
         self.split_val = split
@@ -42,11 +38,9 @@ class Node:
             if self.label == None:
                 print(self.index)
                 raise Exception("Foglia senza label")
-
         else:
             if not (self.greater_child != None and self.lower_child != None):
                 raise Exception("Node with missing child")
-            
             self.greater_child.sanity()
             self.lower_child.sanity()
 
@@ -57,9 +51,7 @@ def check_feature(data, nth_feature):
     for x in data.X[1:]:
         if x[nth_feature] != ref:
              return False
-    
     return True
-
 
 
 
@@ -74,18 +66,14 @@ def choose_feature(data, impurity_measure):
     for nth_feature in range(len(data.X[0])):
         average = ut.average(data.X, nth_feature)
         data1, data2 = ut.split_average(data, average, nth_feature, impurity_measure)
-
         info_gain = ut.info_gain(data, data1, data2)
-        
         if best_info_gain == None or info_gain > best_info_gain:
             best_split = [data1, data2]
             best_info_gain = info_gain
             split_val = average
             index = nth_feature
-            
     print("best info gain ")
     print (best_info_gain)
-        
     return index, split_val, best_split
 
 
@@ -101,7 +89,6 @@ def learn(data, impurity_measure, prune = False, father=None):
     if len(labels) == 1:
         leaf = Node(father, label=labels[0])
         return leaf
-
     second_base_case = True
     for i in range(len(data.X[0])):
         if check_feature(data, i):
@@ -109,20 +96,18 @@ def learn(data, impurity_measure, prune = False, father=None):
         else:
             second_base_case = False
             break
-
     if second_base_case:
         most_common = max(label_table, key=label_table.get)
         print(f"secoondo caso base {most_common}")
         leaf = Node(father, label=most_common) 
         return leaf
-        
-    
     index, split_val, best_split = choose_feature(data, impurity_measure)
     node = Node(father)
     node.set_decision(index, split_val)
     node.set_children(learn(best_split[0], node), learn(best_split[1], node))
-    
     return node
+
+
 
 def predict(x, node):
     if node.is_leaf():
@@ -140,9 +125,7 @@ def predict(x, node):
 def split_prune(X,y, percent=0.8):
     indexes = list(range(len(X)))
     random.shuffle(indexes)
-    
     trainX, trainY, pruneX, pruneY = [], [], [], []
-    
     for i in range(len(X)):
         if i < int(len(X) * percent):
             trainX.append(X[indexes[i]])
@@ -150,16 +133,30 @@ def split_prune(X,y, percent=0.8):
         else:
             pruneX.append(X[indexes[i]])
             pruneY.append(y[indexes[i]])
-
-
     return trainX, trainY, pruneX, pruneY
-    
+ 
+ 
+ 
 def accuracy(node, predictions):
-    good_predictions = (predictions == expected)
+    good_predictions = (predictions == expected) #expected to be created.
     accuracy = good_predicitons/len(predictions)
     return accuracy
     
-    
+  
+def prune(node):
+    branch = []
+    if node.is_leaf():
+        node = node.father
+    #bisogna trovare the majority label del nodo, ma quindi, sui suoi due figli? o solo sul dataset che punta al nodo da cui risaliamo? Serve una funzione is_lower/greater_child?
+
+"""
+def majority_label(node): #faccio majority label per ora con entrambi i figli del nodo
+    X = node.lower_child
+    majority_label = None
+    labels = []
+    for x in X:
+"""
+  
 
 X,y = ut.get_data()
 
