@@ -1,5 +1,6 @@
 import utilities as ut
 import random
+import numpy as np
 
 
 
@@ -10,11 +11,11 @@ class Node:
         self.index = Node.amount
         Node.amount += 1
         self.father = father
-        self.label = label
+        self.label  = label
         self.nth_feature = None
-        self.split_val = None
+        self.split_val   = None
         self.greater_child = None
-        self.lower_child = None
+        self.lower_child   = None
         
     def set_decision(self, nth, split):
         self.nth_feature = nth
@@ -22,8 +23,9 @@ class Node:
 
     def set_children(self, greater, lower):
         self.greater_child = greater
-        self.lower_child = lower
-
+        self.lower_child   = lower
+    def set_label(self, label):
+        self.label = label
     def is_leaf(self):
         return self.greater_child == None
 
@@ -77,14 +79,19 @@ def choose_feature(data, impurity_measure):
     return index, split_val, best_split
 
 
-def larn(X, y, impurity_measure='entropy', prune = False):
-    data = ut.dataset(X,y)
-    return learn(data, impurity_measure, prune)
+def learn(X, y, impurity_measure='entropy', prune = False):
+    if prune:
+        trainX, trainY, pruneX, pruneY = split_prune(X,y, percent=0.8)
+        data = ut.dataset(trainX,trainY)
+    else:
+        data = ut.dataset(X,y)
+    root = train(data, impurity_measure, prune)
+    #if prune:    #prune deve cominciare da una foglia..... how?
+      #  prune(root .... mancano parametri)
+    return root
+    
 
-
-def learn(data, impurity_measure, prune = False, father=None):
-    #trainX,trainY, pruneX, pruneY = split_prune(X,y, percent=0.8)
-    #data = ut.dataset(trainX,trainY)
+def train(data, impurity_measure, prune = False, father=None):
     labels = list(data.label_table.keys())
     if len(labels) == 1:
         leaf = Node(father, label=labels[0])
@@ -104,7 +111,7 @@ def learn(data, impurity_measure, prune = False, father=None):
     index, split_val, best_split = choose_feature(data, impurity_measure)
     node = Node(father)
     node.set_decision(index, split_val)
-    node.set_children(learn(best_split[0], node), learn(best_split[1], node))
+    node.set_children(train(best_split[0], node), train(best_split[1], node))
     return node
 
 
@@ -137,33 +144,55 @@ def split_prune(X,y, percent=0.8):
  
  
  
-def accuracy(node, predictions):
-    good_predictions = (predictions == expected) #expected to be created.
+def accuracy(expected, predictions):
+    good_predictions = (predictions == expected)
     accuracy = good_predicitons/len(predictions)
     return accuracy
     
   
-def prune(node):
-    branch = []
+def prune(node, pruneX, pruneY):   #
     if node.is_leaf():
         node = node.father
     #bisogna trovare the majority label del nodo, ma quindi, sui suoi due figli? o solo sul dataset che punta al nodo da cui risaliamo? Serve una funzione is_lower/greater_child?
+    label = majority_label(node)
+    prune_predictions = []
+    for x in pruneX:     #sec me bisogna fare che ogni nodo ha un' accuracy?????
+        res = predict(x, node)
+        prune_predictions.append(res)
+    acc_before = accuracy(pruneY, prune_predictions)  #this accuracy is before replacing the node in question with the majority label. Sarebbe comodo avercela già calcolata.
+    for i in range(len(prune_predictions)):
+        if prune_predictions[i] != label:
+            prune_predictions[i] = label
+    acc_after = accuracy(pruneY, prune_predictions)
+    if acc_after >= acc_before:   #allora pruno il culo
+        node.set_label(label)
+        node.set_children(None, None) # lo trasformo in foglia
+    
 
-"""
-def majority_label(node): #faccio majority label per ora con entrambi i figli del nodo
-    X = node.lower_child
-    majority_label = None
-    labels = []
-    for x in X:
-"""
-  
+
+def majority_label(node):       #faccio majority label per ora con entrambi i figli del nodo
+    lower = node.lower_child
+    bigger = node.greater_child
+    X = np.concatenate(lower, bigger)
+    labels = {}
+    for x in X[:, -1]:  #l'ultima colonna?
+        if x in labels.keys():
+            labels[x] += 1
+        else :
+            labels[x] = 1
+    return max(labels)
+    
+
+
+
+
 
 X,y = ut.get_data()
 
 trainX, trainY, pruneX, pruneY = split_prune(X, y)
 
-data_train = ut.dataset(trainX,trainY,'gini')
-root = larn(trainX,trainY,'gini')
+data_train = ut.dataset(X,y,'gini')
+root = learn(X,y,'gini')
 prune_predictions = []
 for x in pruneX:
     res = predict(x, root)
