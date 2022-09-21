@@ -126,7 +126,7 @@ def train(data, impurity_measure, prune = False, father=None):
             second_base_case = False
             break
     if second_base_case:
-        print(f"secoondo caso base {most_common}")
+        print(f"secondo caso base {most_common}")
         leaf = decNode(father, label=most_common) 
         return leaf
     index, split_val, best_split = choose_feature(data, impurity_measure)
@@ -140,7 +140,18 @@ def train(data, impurity_measure, prune = False, father=None):
 
 
 def predict(x, node):
+
+    while not node.is_leaf():
+        index    = node.nth_feature
+        question = node.split_val
+        if x[index] > question:
+            node = node.greater
+        else:
+            node = node.lower
     if node.is_leaf():
+        return node.label
+            
+    """if node.is_leaf():
         return node.label
     index    = node.nth_feature
     question = node.split_val
@@ -149,7 +160,7 @@ def predict(x, node):
     else:
         node = node.lower
     return predict(x,node)
-
+"""
 
 
 def split_prune(X,y, percent=0.8):
@@ -168,7 +179,6 @@ def split_prune(X,y, percent=0.8):
  
  
 def accuracy(node, X, y):
-    
     good_predicitons = 0
     for i in range(len(X)):     
         res = predict(X[i], node)
@@ -179,7 +189,7 @@ def accuracy(node, X, y):
     return accuracy
     
   
-def prune(node, root,pruneX, pruneY):
+def prune(node, root, pruneX, pruneY):
     assert(not node.is_leaf())
     
     label = node.majority_label
@@ -205,13 +215,15 @@ if __name__ == "__main__":
 
     trainX, trainY, pruneX, pruneY = split_prune(X, y)
 
-    data_train = ut.dataset(X, y, 'gini')
-    root = learn(X, y, 'gini', prune=True)
+    data_train = ut.dataset(X, y, 'entropy')
+    root = learn(X, y, 'entropy', prune = True)
+    print(root.amount)
 
     print(root.sub_tree_size())
     root.sanity()
     print(f"accuracy on training data: {accuracy(root, trainX, trainY)}")
-    print(f"accuracy on pruning data: {accuracy(root, pruneX, pruneY)}")
+    if prune:
+        print(f"accuracy on pruning data: {accuracy(root, pruneX, pruneY)}")
 
     import os, psutil
     process = psutil.Process(os.getpid())
