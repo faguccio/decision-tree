@@ -3,50 +3,70 @@ import random
 import numpy as np
 
 
-
 class Node:
     amount = 0
 
-    def __init__(self, father, label=None):
+    def __init__(self, father):
         self.index = Node.amount
         Node.amount += 1
         self.father = father
+        self.lower = None
+        self.greater = None
+
+    def is_leaf(self):
+        return self.lower == None and self.greater == None
+
+    def is_sane(self):
+        if ut.xor ((self.lower == None), (self.greater == None)):
+            print(f"Individuato nodo non sano, indice {self.index}")
+            raise Exception("Nodo non sano!}")
+   
+    def sub_tree_size(self): 
+        if self.is_leaf():
+            return 1
+        return self.lower.sub_tree_size() + self.greater.sub_tree_size()
+    
+
+
+class decNode(Node):
+
+    def __init__(self, father, label=None):
+        super().__init__(father)
         self.label  = label
         self.nth_feature = None
         self.split_val   = None
-        self.greater_child = None
-        self.lower_child   = None
+        self.majority_label = None
         
     def set_decision(self, nth, split):
         self.nth_feature = nth
         self.split_val = split
 
-    def set_children(self, greater, lower):
-        self.greater_child = greater
-        self.lower_child   = lower
-    def set_label(self, label):
-        self.label = label
-    def is_leaf(self):
-        return self.greater_child == None
-
-    def is_sane(self):
-        if self.is_leaf():
-            if self.lower_child != None:
-                raise Exception("Foglia malata")
-
     def sanity(self):
         self.is_sane()
         if self.is_leaf():
             if self.label == None:
-                print(self.index)
+                print(f"individuata foglia senza label, indice: {self.index}")
                 raise Exception("Foglia senza label")
-        else:
-            if not (self.greater_child != None and self.lower_child != None):
-                raise Exception("Node with missing child")
-            self.greater_child.sanity()
-            self.lower_child.sanity()
-
             
+        else:
+            self.greater.sanity()
+            self.lower.sanity()
+
+    def substitute(self, target):
+        self.father = target.father
+        # Delete children by erasing references
+        self.lower.father = None
+        self.greater.father = None
+        self.lower = target.lower
+        self.greater = target.greater
+        
+        self.majority_label = target.majority_label
+        self.nth_feature = target.nth_feature
+        self.split_val   = target.split_val
+        self.label = target.label
+        
+
+
 
 def check_feature(data, nth_feature):
     ref = data.X[0][nth_feature]
@@ -74,8 +94,7 @@ def choose_feature(data, impurity_measure):
             best_info_gain = info_gain
             split_val = average
             index = nth_feature
-    print("best info gain ")
-    print (best_info_gain)
+   
     return index, split_val, best_split
 
 
@@ -83,18 +102,19 @@ def learn(X, y, impurity_measure='entropy', prune = False):
     if prune:
         trainX, trainY, pruneX, pruneY = split_prune(X,y, percent=0.8)
         data = ut.dataset(trainX,trainY)
-    else:
+        root = train(data, impurity_measure, prune)
+        prune_all_subtree(root, pruneX, pruneY)
+    else:    
         data = ut.dataset(X,y)
-    root = train(data, impurity_measure, prune)
-    #if prune:    #prune deve cominciare da una foglia..... how?
-      #  prune(root .... mancano parametri)
+        root = train(data, impurity_measure, prune)
     return root
     
 
 def train(data, impurity_measure, prune = False, father=None):
     labels = list(data.label_table.keys())
+    most_common = max(data.label_table, key=data.label_table.get)
     if len(labels) == 1:
-        leaf = Node(father, label=labels[0])
+        leaf = decNode(father, label=labels[0])
         return leaf
     second_base_case = True
     for i in range(len(data.X[0])):
@@ -104,14 +124,15 @@ def train(data, impurity_measure, prune = False, father=None):
             second_base_case = False
             break
     if second_base_case:
-        most_common = max(label_table, key=label_table.get)
         print(f"secoondo caso base {most_common}")
-        leaf = Node(father, label=most_common) 
+        leaf = decNode(father, label=most_common) 
         return leaf
     index, split_val, best_split = choose_feature(data, impurity_measure)
-    node = Node(father)
+    node = decNode(father)
     node.set_decision(index, split_val)
-    node.set_children(train(best_split[0], node), train(best_split[1], node))
+    node.greater = train(best_split[0], node)
+    node.lower = train(best_split[1], node)
+    node.majority_label = (most_common)
     return node
 
 
@@ -122,9 +143,9 @@ def predict(x, node):
     index    = node.nth_feature
     question = node.split_val
     if x[index] > question:
-        node = node.greater_child
+        node = node.greater
     else:
-        node = node.lower_child
+        node = node.lower
     return predict(x,node)
 
 
@@ -144,46 +165,38 @@ def split_prune(X,y, percent=0.8):
  
  
  
-def accuracy(expected, predictions):
-    good_predictions = (predictions == expected)
-    accuracy = good_predicitons/len(predictions)
+def accuracy(node, X, y):
+    
+    good_predicitons = 0
+    for i in range(len(X)):     
+        res = predict(X[i], node)
+        if res == y[i]:
+            good_predicitons += 1
+    
+    accuracy = good_predicitons/len(X)
     return accuracy
     
   
-def prune(node, pruneX, pruneY):   #
+def prune(node, pruneX, pruneY):
+    assert(not node.is_leaf())
+    
+    label = node.majority_label
+    acc_before = accuracy(node, pruneX, pruneY)  
+    print(f"{acc_before}   {node.index}")
+    leaf = decNode(node.father, label)
+
+    acc_after = accuracy(leaf, pruneX, pruneY)
+    if acc_after >= acc_before and acc_before != 0:   
+        print(f"{acc_after/acc_before}   {node.index}")
+        node.substitute(leaf)
+
+
+def prune_all_subtree(node, pruneX, pruneY):
     if node.is_leaf():
-        node = node.father
-    #bisogna trovare the majority label del nodo, ma quindi, sui suoi due figli? o solo sul dataset che punta al nodo da cui risaliamo? Serve una funzione is_lower/greater_child?
-    label = majority_label(node)
-    prune_predictions = []
-    for x in pruneX:     #sec me bisogna fare che ogni nodo ha un' accuracy?????
-        res = predict(x, node)
-        prune_predictions.append(res)
-    acc_before = accuracy(pruneY, prune_predictions)  #this accuracy is before replacing the node in question with the majority label. Sarebbe comodo avercela già calcolata.
-    for i in range(len(prune_predictions)):
-        if prune_predictions[i] != label:
-            prune_predictions[i] = label
-    acc_after = accuracy(pruneY, prune_predictions)
-    if acc_after >= acc_before:   #allora pruno il culo
-        node.set_label(label)
-        node.set_children(None, None) # lo trasformo in foglia
-    
-
-
-def majority_label(node):       #faccio majority label per ora con entrambi i figli del nodo
-    lower = node.lower_child
-    bigger = node.greater_child
-    X = np.concatenate(lower, bigger)
-    labels = {}
-    for x in X[:, -1]:  #l'ultima colonna?
-        if x in labels.keys():
-            labels[x] += 1
-        else :
-            labels[x] = 1
-    return max(labels)
-    
-
-
+        return
+    prune_all_subtree(node.greater, pruneX, pruneY)
+    prune_all_subtree(node.lower, pruneX, pruneY)
+    prune(node, pruneX, pruneY)
 
 
 
@@ -192,11 +205,13 @@ X,y = ut.get_data()
 trainX, trainY, pruneX, pruneY = split_prune(X, y)
 
 data_train = ut.dataset(X,y,'gini')
-root = learn(X,y,'gini')
-prune_predictions = []
-for x in pruneX:
-    res = predict(x, root)
-    prune_predictions.append(res)
+root = learn(X,y,'gini', prune=True)
 
-print(root.amount)
+print(root.sub_tree_size())
 root.sanity()
+print(f"accuracy on training data: {accuracy(root, trainX, trainY)}")
+print(f"accuracy on pruning data: {accuracy(root, pruneX, pruneY)}")
+
+import os, psutil
+process = psutil.Process(os.getpid())
+print(process.memory_info().rss / (1024*1024))  # in bytes

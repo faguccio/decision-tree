@@ -1,6 +1,11 @@
 import math
 
 
+
+
+def xor(a, b):
+    return bool( (a and not b) or (b and not a) )
+
 def get_data():
     with open('magic04.data') as file:
         lines = file.readlines()
