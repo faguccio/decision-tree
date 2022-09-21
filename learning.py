@@ -2,6 +2,8 @@ import utilities as ut
 import random
 import numpy as np
 
+random.seed(123)
+
 
 class Node:
     amount = 0
@@ -103,12 +105,12 @@ def learn(X, y, impurity_measure='entropy', prune = False):
         trainX, trainY, pruneX, pruneY = split_prune(X,y, percent=0.8)
         data = ut.dataset(trainX,trainY)
         root = train(data, impurity_measure, prune)
-        prune_all_subtree(root, pruneX, pruneY)
+        prune_all_subtree(root, root, pruneX, pruneY)
     else:    
         data = ut.dataset(X,y)
         root = train(data, impurity_measure, prune)
     return root
-    
+ 
 
 def train(data, impurity_measure, prune = False, father=None):
     labels = list(data.label_table.keys())
@@ -177,41 +179,40 @@ def accuracy(node, X, y):
     return accuracy
     
   
-def prune(node, pruneX, pruneY):
+def prune(node, root,pruneX, pruneY):
     assert(not node.is_leaf())
     
     label = node.majority_label
-    acc_before = accuracy(node, pruneX, pruneY)  
-    print(f"{acc_before}   {node.index}")
+    acc_before = accuracy(root, pruneX, pruneY)  
     leaf = decNode(node.father, label)
 
     acc_after = accuracy(leaf, pruneX, pruneY)
-    if acc_after >= acc_before and acc_before != 0:   
-        print(f"{acc_after/acc_before}   {node.index}")
+    if acc_after >= acc_before:# and acc_before != 0:   
+        #print(f"{acc_after/acc_before}   {node.index}")
         node.substitute(leaf)
 
 
-def prune_all_subtree(node, pruneX, pruneY):
+def prune_all_subtree(node, root, pruneX, pruneY):
     if node.is_leaf():
         return
-    prune_all_subtree(node.greater, pruneX, pruneY)
-    prune_all_subtree(node.lower, pruneX, pruneY)
-    prune(node, pruneX, pruneY)
+    prune_all_subtree(node.greater, root, pruneX, pruneY)
+    prune_all_subtree(node.lower, root, pruneX, pruneY)
+    prune(node, root, pruneX, pruneY)
 
 
+if __name__ == "__main__":
+    X,y = ut.get_data()
 
-X,y = ut.get_data()
+    trainX, trainY, pruneX, pruneY = split_prune(X, y)
 
-trainX, trainY, pruneX, pruneY = split_prune(X, y)
+    data_train = ut.dataset(X, y, 'gini')
+    root = learn(X, y, 'gini', prune=True)
 
-data_train = ut.dataset(X,y,'gini')
-root = learn(X,y,'gini', prune=True)
+    print(root.sub_tree_size())
+    root.sanity()
+    print(f"accuracy on training data: {accuracy(root, trainX, trainY)}")
+    print(f"accuracy on pruning data: {accuracy(root, pruneX, pruneY)}")
 
-print(root.sub_tree_size())
-root.sanity()
-print(f"accuracy on training data: {accuracy(root, trainX, trainY)}")
-print(f"accuracy on pruning data: {accuracy(root, pruneX, pruneY)}")
-
-import os, psutil
-process = psutil.Process(os.getpid())
-print(process.memory_info().rss / (1024*1024))  # in bytes
+    import os, psutil
+    process = psutil.Process(os.getpid())
+    print(process.memory_info().rss / (1024*1024))  # in bytes
