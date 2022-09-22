@@ -1,7 +1,7 @@
 import math
 import random
 
-random.seed(123)
+#random.seed(123)
 
 
 
@@ -24,7 +24,7 @@ def get_data():
         return lines, y
 
 
-def split_dataset( X, y, percent=0.8):
+def split_dataset(X, y, percent=0.8):
     indexes = list(range(len(X)))
     random.shuffle(indexes)
     trainX, trainY, pruneX, pruneY = [], [], [], []
@@ -117,6 +117,20 @@ def split_average(data, average, nth_feature, impurity):
     data2 = dataset(X2, y2, impurity)
     return data1, data2
 
+
+def split_average_light(X, y, average, nth_feature):
+    X1, X2 = [], []
+    y1, y2 = [], []
+
+    for i in range(len(X)):
+        if X[i][nth_feature] > average :
+            X1.append(X[i])
+            y1.append([i])
+        else:
+            X2.append(X[i])
+            y2.append(y[i])
+            
+    return X1, y1, X2, y2
 
 
 """
