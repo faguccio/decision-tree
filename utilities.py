@@ -1,5 +1,7 @@
 import math
+import random
 
+random.seed(123)
 
 
 
@@ -13,7 +15,6 @@ def get_data():
 
         for i in range(len(lines)):
             line = lines[i].split(",")
-            
             for j in range(len(line) -1):
                 line[j] = float(line[j])
 
@@ -22,6 +23,19 @@ def get_data():
        
         return lines, y
 
+
+def split_dataset( X, y, percent=0.8):
+    indexes = list(range(len(X)))
+    random.shuffle(indexes)
+    trainX, trainY, pruneX, pruneY = [], [], [], []
+    for i in range(len(X)):
+        if i < int(len(X) * percent):
+            trainX.append(X[indexes[i]])
+            trainY.append(y[indexes[i]])
+        else:
+            pruneX.append(X[indexes[i]])
+            pruneY.append(y[indexes[i]])
+    return trainX, trainY, pruneX, pruneY
 
 
 

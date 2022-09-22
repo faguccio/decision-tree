@@ -1,4 +1,27 @@
+from sklearn import tree
+import numpy as np
+import learning as lrn
 
+
+decTree = tree.DecisionTreeClassifier()  # default criterion is gini
+decTree = decTree.fit(X,y)  #trains the tree
+x = np.array([49.5, 36.2, 100.0, 34.0, 87.0, 42.0, 47.5, 79.2, 50.0, 180.0])
+pred = decTree.predict(x)
+print(f""pred)
+
+
+myDecTree = lrn.learn(X, y, 'gini', prune = False)
+
+
+
+
+
+
+
+
+
+
+"""
 def wechoose8():
     ffg = []
     ffh = []
@@ -19,3 +42,4 @@ def wechoose8():
     plt.hist(ffg, bins=40,  histtype="step", color='green')
     plt.show()
 
+"""
