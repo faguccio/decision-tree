@@ -78,8 +78,8 @@ class Tree:
 
 
 
-    def predict(self, x, node="default"):
-        if node == "default":
+    def predict(self, x, node=None):
+        if node == None:
             node = self.root
         while not node.is_leaf():
             index = node.decData.nth_feature
@@ -131,13 +131,12 @@ class Tree:
 
 
     def fastPrune(self, node):
-        if self.acc_before == None:
-            self.acc_before = self.fastAccuracy(node)
+        acc_before = self.fastAccuracy(node)
         label = node.majority_label
         leaf = Node(node.father, label)
         Node.steal_parent(leaf, node)
         acc_after = self.fastAccuracy(node)
-        if acc_after < self.acc_before:
+        if acc_after < acc_before:
             Node.steal_parent(node, leaf)
 
 
@@ -160,7 +159,7 @@ class Tree:
 
     def learn(self, X, y, impurity_measure='entropy', prune = False):
         if prune:
-            trainX, trainY, pruneX, pruneY = ut.split_dataset(X,y, percent=0.8)
+            trainX, trainY, pruneX, pruneY = ut.split_dataset(X,y, percent=0.9)
             data = ut.dataset(trainX, trainY)
             self.root = self.train(data, impurity_measure, prune)
             seconds = time.time()
