@@ -133,9 +133,3 @@ def split_average_light(X, y, average, nth_feature):
     return X1, y1, X2, y2
 
 
-"""
-def find_split(data, fn):
-    my_data = data.copy()
-    my_data.sort(key=lambda x: x[fn])
-    print( entropy(data) - (entropy(data1) + entropy(data2)) / 2)
-"""
