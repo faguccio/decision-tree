@@ -1,7 +1,7 @@
 import math
 import random
 
-#random.seed(123)
+random.seed(56845318)
 
 
 
@@ -78,13 +78,6 @@ class dataset:
             self.impurity = entropy(self.label_table,self.y)
 
 
-"""
-X,y = get_data()
-data = dataset(X, y)
-print(data.impurity)
-"""
-
-
 def info_gain(data_father, data1, data2):
     tot = len(data_father.X)
     res = data_father.impurity - (data1.impurity*len(data1.X) + data2.impurity*len(data2.X))/tot
@@ -116,20 +109,4 @@ def split_average(data, average, nth_feature, impurity):
     data1 = dataset(X1, y1, impurity)
     data2 = dataset(X2, y2, impurity)
     return data1, data2
-
-
-def split_average_light(X, y, average, nth_feature):
-    X1, X2 = [], []
-    y1, y2 = [], []
-
-    for i in range(len(X)):
-        if X[i][nth_feature] > average :
-            X1.append(X[i])
-            y1.append([i])
-        else:
-            X2.append(X[i])
-            y2.append(y[i])
-            
-    return X1, y1, X2, y2
-
 

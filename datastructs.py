@@ -5,8 +5,6 @@ class DecisionData:
         self.nth_feature = None
         self.split_val   = None
         self.majority_label = None 
-        self.subX = None
-        self.subY = None
 
 
     def clone(self):
@@ -14,16 +12,12 @@ class DecisionData:
         clone.nth_feature = self.nth_feature 
         clone.split_val   = self.split_val
         clone.majority_label = self.majority_label 
-        clone.subX = self.subX
-        clone.subY = self.subY
         return clone
 
     def overwrite(target, source):
         target.nth_feature = source.nth_feature 
         target.split_val   = source.split_val
         target.majority_label = source.majority_label 
-        target.subX = source.subX
-        target.subY = source.subY
 
          
         
@@ -37,9 +31,6 @@ class Node:
         self.decData = DecisionData()
         self.decData.majority_label = majority_label
        
-    def set_sub(self,X, y):
-        self.decData.subX = X
-        self.decData.subY = y
 
     def is_leaf(self):
         return self.lower == None and self.greater == None
