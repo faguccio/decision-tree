@@ -20,7 +20,7 @@ print(f"validation accuracy score with gini {val_score1}")
 
 decTree2     = tree.DecisionTreeClassifier(criterion = "entropy")
 decTree2     = decTree2.fit(trainX,trainY)  #trains the tree
-predictions2 = decTree.predict(val_x)
+predictions2 = decTree2.predict(val_x)
 val_score2   = accuracy_score(val_y, predictions2)
 print(f"validation accuracy score with entropy {val_score2}")
 
@@ -28,9 +28,11 @@ print(f"validation accuracy score with entropy {val_score2}")
 pred_test1   = decTree.predict(test_x)
 test_score1  = accuracy_score(test_y, pred_test1)
 print(f"test accuracy score with gini {test_score1}")
-pred_test2   = decTree.predict(test_x)
+print(decTree.tree_.node_count)
+pred_test2   = decTree2.predict(test_x)
 test_score2  = accuracy_score(test_y, pred_test2)
 print(f"test accuracy score with entropy {test_score2}")
+print(decTree2.tree_.node_count)
 
 
 #since sklearn prunes with cost complexity pruning, which is very time consuming and much more
